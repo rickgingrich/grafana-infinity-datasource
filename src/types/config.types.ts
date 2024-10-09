@@ -52,6 +52,7 @@ export interface InfinityOptions extends DataSourceJsonData {
   unsecuredQueryHandling?: UnsecureQueryHandling;
   enableSecureSocksProxy?: boolean;
   pathEncodedUrlsEnabled?: boolean;
+  googleCloudRunAudience?: string;
 }
 
 export interface InfinitySecureOptions {
@@ -66,6 +67,7 @@ export interface InfinitySecureOptions {
   oauth2ClientSecret?: string;
   oauth2JWTPrivateKey?: string;
   azureBlobAccountKey?: string;
+  googleCloudRunServiceAccountKey?: string;
 }
 export interface SecureField {
   id: string;

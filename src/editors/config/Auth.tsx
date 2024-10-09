@@ -18,6 +18,7 @@ const authTypes: Array<SelectableValue<AuthType | 'others'> & { logo?: string }>
   { value: 'oauth2', label: 'OAuth2', logo: '/public/plugins/yesoreyeram-infinity-datasource/img/oauth-2-sm.png' },
   { value: 'aws', label: 'AWS', logo: '/public/plugins/yesoreyeram-infinity-datasource/img/aws.jpg' },
   { value: 'azureBlob', label: 'Azure Blob' },
+  { value: 'googleCloudRun', label: 'Google Cloud Run' },
   { value: 'others', label: 'Other Auth Providers' },
 ];
 
@@ -105,6 +106,49 @@ export const AuthEditor = (props: DataSourcePluginOptionsEditorProps<InfinityOpt
       secureJsonData: { ...options.secureJsonData, [key]: '' },
     });
   };
+  
+  const onGoogleCloudRunAudienceChange = (audience: string) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...options.jsonData,
+        googleCloudRunAudience: audience,
+      },
+    });
+  };
+
+  const onServiceAccountKeyUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        onOptionsChange({
+          ...options,
+          secureJsonData: {
+            ...options.secureJsonData,
+            googleCloudRunServiceAccountKey: content,
+          },
+        });
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const onResetServiceAccountKey = () => {
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        googleCloudRunServiceAccountKey: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        googleCloudRunServiceAccountKey: '',
+      },
+    });
+  };
+
   return (
     <>
       <h5 className={styles.subheading}>Auth type</h5>
@@ -185,6 +229,38 @@ export const AuthEditor = (props: DataSourcePluginOptionsEditorProps<InfinityOpt
                   />
                 </div>
                 <ConfigPreview jsonData={options.jsonData} authType={authType} />
+              </>
+            )}
+            {authType === 'googleCloudRun' && (
+              <>
+                <div className="gf-form">
+                  <FormField
+                    label="Google Cloud Run Audience"
+                    labelWidth={10}
+                    inputWidth={20}
+                    onChange={(e) => onGoogleCloudRunAudienceChange(e.currentTarget.value)}
+                    value={options.jsonData.googleCloudRunAudience || ''}
+                    placeholder="https://your-cloud-run-service-url"
+                  />
+                </div>
+                <div className="gf-form">
+                  <InlineFormLabel width={10}>Service Account Key</InlineFormLabel>
+                  {secureJsonFields?.googleCloudRunServiceAccountKey ? (
+                    <div className="gf-form">
+                      <input type="text" className="gf-form-input max-width-12" placeholder="Configured" disabled={true} />
+                      <Button variant="secondary" type="button" onClick={onResetServiceAccountKey}>
+                        Reset
+                      </Button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      accept="application/json"
+                      onFileUpload={onServiceAccountKeyUpload}
+                    >
+                      Upload JSON key
+                    </FileUpload>
+                  )}
+                </div>
               </>
             )}
             {authType === 'apiKey' && (

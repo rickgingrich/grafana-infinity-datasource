@@ -14,15 +14,16 @@ import (
 )
 
 const (
-	AuthenticationMethodNone         = "none"
-	AuthenticationMethodBasic        = "basicAuth"
-	AuthenticationMethodApiKey       = "apiKey"
-	AuthenticationMethodBearerToken  = "bearerToken"
-	AuthenticationMethodForwardOauth = "oauthPassThru"
-	AuthenticationMethodDigestAuth   = "digestAuth"
-	AuthenticationMethodOAuth        = "oauth2"
-	AuthenticationMethodAWS          = "aws"
-	AuthenticationMethodAzureBlob    = "azureBlob"
+	AuthenticationMethodNone           = "none"
+	AuthenticationMethodBasic          = "basicAuth"
+	AuthenticationMethodApiKey         = "apiKey"
+	AuthenticationMethodBearerToken    = "bearerToken"
+	AuthenticationMethodForwardOauth   = "oauthPassThru"
+	AuthenticationMethodDigestAuth     = "digestAuth"
+	AuthenticationMethodOAuth          = "oauth2"
+	AuthenticationMethodAWS            = "aws"
+	AuthenticationMethodAzureBlob      = "azureBlob"
+	AuthenticationMethodGoogleCloudRun = "googleCloudRun"
 )
 
 const (
@@ -118,7 +119,9 @@ type InfinitySettings struct {
 	UnsecuredQueryHandling   UnsecuredQueryHandlingMode
 	PathEncodedURLsEnabled   bool
 	// ProxyOpts is used for Secure Socks Proxy configuration
-	ProxyOpts httpclient.Options
+	ProxyOpts                       httpclient.Options
+	GoogleCloudRunAudience          string `json:"googleCloudRunAudience,omitempty"`
+	GoogleCloudRunServiceAccountKey string `json:"-"`
 }
 
 func (s *InfinitySettings) Validate() error {
@@ -154,6 +157,12 @@ func (s *InfinitySettings) Validate() error {
 	}
 	if s.HaveSecureHeaders() && len(s.AllowedHosts) < 1 {
 		return errors.New("configure allowed hosts in the authentication section")
+	}
+	return nil
+	if s.AuthenticationMethod == AuthenticationMethodGoogleCloudRun {
+		if s.GoogleCloudRunAudience == "" {
+			return errors.New("Google Cloud Run audience is required")
+		}
 	}
 	return nil
 }
@@ -201,8 +210,10 @@ type InfinitySettingsJson struct {
 	AzureBlobAccountName     string         `json:"azureBlobAccountName,omitempty"`
 	PathEncodedURLsEnabled   bool           `json:"pathEncodedUrlsEnabled,omitempty"`
 	// Security
-	AllowedHosts           []string                   `json:"allowedHosts,omitempty"`
-	UnsecuredQueryHandling UnsecuredQueryHandlingMode `json:"unsecuredQueryHandling,omitempty"`
+	AllowedHosts                    []string                   `json:"allowedHosts,omitempty"`
+	UnsecuredQueryHandling          UnsecuredQueryHandlingMode `json:"unsecuredQueryHandling,omitempty"`
+	GoogleCloudRunAudience          string                     `json:"googleCloudRunAudience,omitempty"`
+	GoogleCloudRunServiceAccountKey string                     `json:"-"`
 }
 
 func LoadSettings(ctx context.Context, config backend.DataSourceInstanceSettings) (settings InfinitySettings, err error) {
@@ -256,6 +267,7 @@ func LoadSettings(ctx context.Context, config backend.DataSourceInstanceSettings
 		if len(infJson.AllowedHosts) > 0 {
 			settings.AllowedHosts = infJson.AllowedHosts
 		}
+		settings.GoogleCloudRunAudience = infJson.GoogleCloudRunAudience
 	}
 	settings.ReferenceData = infJson.ReferenceData
 	settings.CustomHealthCheckEnabled = infJson.CustomHealthCheckEnabled
@@ -291,6 +303,9 @@ func LoadSettings(ctx context.Context, config backend.DataSourceInstanceSettings
 	}
 	if val, ok := config.DecryptedSecureJSONData["azureBlobAccountKey"]; ok {
 		settings.AzureBlobAccountKey = val
+	}
+	if val, ok := config.DecryptedSecureJSONData["googleCloudRunServiceAccountKey"]; ok {
+		settings.GoogleCloudRunServiceAccountKey = val
 	}
 	settings.CustomHeaders = GetSecrets(config, "httpHeaderName", "httpHeaderValue")
 	settings.SecureQueryFields = GetSecrets(config, "secureQueryName", "secureQueryValue")

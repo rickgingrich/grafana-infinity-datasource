@@ -23,6 +23,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/icholy/digest"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
 )
 
 type Client struct {
@@ -109,6 +111,14 @@ func NewClient(ctx context.Context, settings models.InfinitySettings) (client *C
 	httpClient = ApplyOAuthClientCredentials(ctx, httpClient, settings)
 	httpClient = ApplyOAuthJWT(ctx, httpClient, settings)
 	httpClient = ApplyAWSAuth(ctx, httpClient, settings)
+
+	if settings.AuthenticationMethod == models.AuthenticationMethodGoogleCloudRun {
+		httpClient, err = ApplyGoogleCloudRunAuth(ctx, httpClient, settings, google.CredentialsFromJSON, idtoken.NewTokenSource)
+		if err != nil {
+			logger.Error("error applying Google Cloud Run auth", "error", err.Error(), "datasource uid", settings.UID, "datasource name", settings.Name)
+			return nil, fmt.Errorf("error applying Google Cloud Run auth: %v", err)
+		}
+	}
 
 	httpClient, err = ApplySecureSocksProxyConfiguration(ctx, httpClient, settings)
 	if err != nil {
