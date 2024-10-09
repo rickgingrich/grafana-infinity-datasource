@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { onUpdateDatasourceSecureJsonDataOption, DataSourcePluginOptionsEditorProps, SelectableValue } from '@grafana/data';
-import { Icon, InlineFormLabel, LegacyForms, RadioButtonGroup, Select, useTheme2 } from '@grafana/ui';
+import { Icon, InlineFormLabel, LegacyForms, RadioButtonGroup, Select, useTheme2, Button, FileUpload } from '@grafana/ui';
 import React, { useState } from 'react';
 import { AllowedHostsEditor } from './AllowedHosts';
 import { OAuthInputsEditor } from './OAuthInput';
@@ -256,9 +256,7 @@ export const AuthEditor = (props: DataSourcePluginOptionsEditorProps<InfinityOpt
                     <FileUpload
                       accept="application/json"
                       onFileUpload={onServiceAccountKeyUpload}
-                    >
-                      Upload JSON key
-                    </FileUpload>
+                    />
                   )}
                 </div>
               </>
